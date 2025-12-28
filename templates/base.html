@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}System Call Optimizer{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #0a192f;
+            color: #8892b0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .footer {
+            margin-top: auto;
+        }
+        .footer {
+            color: #8892b0;
+        }
+        .footer a {
+            color: #8892b0 !important;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            color: #64ffda !important;
+        }
+        .footer h6 {
+            color: #ccd6f6 !important;
+        }
+        .footer .text-muted {
+            color: #8892b0 !important;
+        }
+        .navbar {
+            background-color: #112240 !important;
+            border-bottom: 1px solid #233554;
+        }
+        .navbar-brand, .nav-link {
+            color: #64ffda !important;
+        }
+        .btn-primary {
+            background-color: #64ffda;
+            border-color: #64ffda;
+            color: #0a192f;
+        }
+        .btn-primary:hover {
+            background-color: #50e3c2;
+            border-color: #50e3c2;
+        }
+        .card {
+            background-color: #112240;
+            border: 1px solid #233554;
+            color: #8892b0;
+        }
+        .form-control {
+            background-color: #0a192f;
+            border: 1px solid #233554;
+            color: #ccd6f6;
+        }
+        .form-control:focus {
+            background-color: #0a192f;
+            border-color: #64ffda;
+            color: #ccd6f6;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">
+                <i class="bi bi-cpu"></i> System Call Optimizer
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'dashboard' %}">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'optimizer_dashboard' %}">
+                                <i class="bi bi-graph-up"></i> Optimizer
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'activity_logs' %}">
+                                <i class="bi bi-clock-history"></i> Activity Logs
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'reports' %}">
+                                <i class="bi bi-file-earmark-text"></i> Reports
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'logout' %}">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'home' %}">
+                                <i class="bi bi-house"></i> Home
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'login' %}">
+                                <i class="bi bi-box-arrow-in-right"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'register' %}">
+                                <i class="bi bi-person-plus"></i> Register
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'qr_login_page' %}">
+                                <i class="bi bi-qr-code-scan"></i> QR Login
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow-1">
+        <div class="container mt-4 mb-5">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="footer mt-auto py-4" style="background-color: #112240; border-top: 1px solid #233554; margin-top: auto;">
+        <div class="container">
+            <div class="row mb-3">
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <h6 class="text-white mb-3"><i class="bi bi-lightning-charge"></i> Quick Links</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'home' %}" class="text-muted text-decoration-none">Home</a></li>
+                        {% if user.is_authenticated %}
+                        <li><a href="{% url 'dashboard' %}" class="text-muted text-decoration-none">Dashboard</a></li>
+                        <li><a href="{% url 'optimizer_dashboard' %}" class="text-muted text-decoration-none">Optimizer</a></li>
+                        {% else %}
+                        <li><a href="{% url 'login' %}" class="text-muted text-decoration-none">Login</a></li>
+                        <li><a href="{% url 'register' %}" class="text-muted text-decoration-none">Register</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <h6 class="text-white mb-3"><i class="bi bi-info-circle"></i> About</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'features' %}" class="text-muted text-decoration-none">Features</a></li>
+                        <li><a href="{% url 'documentation' %}" class="text-muted text-decoration-none">Documentation</a></li>
+                        <li><a href="{% url 'support' %}" class="text-muted text-decoration-none">Support</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <h6 class="text-white mb-3"><i class="bi bi-shield-check"></i> Resources</h6>
+                    <ul class="list-unstyled">
+                        {% if user.is_authenticated %}
+                        <li><a href="{% url 'activity_logs' %}" class="text-muted text-decoration-none">Activity Logs</a></li>
+                        <li><a href="{% url 'reports' %}" class="text-muted text-decoration-none">Reports</a></li>
+                        {% endif %}
+                        <li><a href="#" class="text-muted text-decoration-none">API Docs</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="text-white mb-3"><i class="bi bi-link-45deg"></i> Connect</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="https://github.com/amnandan9" target="_blank" rel="noopener noreferrer" class="text-muted text-decoration-none">
+                            <i class="bi bi-github"></i> GitHub
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr style="border-color: #233554;">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <p class="mb-0" style="color: #8892b0;">
+                        &copy; {% now "Y" %} All rights reserved by <a href="https://github.com/amnandan9" target="_blank" rel="noopener noreferrer" style="color: #64ffda; text-decoration: none;">the developer</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

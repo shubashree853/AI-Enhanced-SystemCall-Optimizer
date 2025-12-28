@@ -1,0 +1,95 @@
+# ============================================================================
+# .dockerignore - Files and directories to exclude from Docker build context
+# ============================================================================
+# This file tells Docker which files to ignore when building the image.
+# Excluding unnecessary files makes builds faster and images smaller.
+# ============================================================================
+
+# Python cache and compiled files
+# ----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+# ----------------------------------------------------------------------------
+venv/
+env/
+ENV/
+.venv
+
+# Django specific
+# ----------------------------------------------------------------------------
+*.log
+*.pot
+*.pyc
+db.sqlite3
+db.sqlite3-journal
+/media/
+/staticfiles/
+
+# IDE and editor files
+# ----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+# ----------------------------------------------------------------------------
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (optional - remove if you want docs in image)
+# ----------------------------------------------------------------------------
+*.md
+!README.md
+docs/
+
+# Environment files (should be passed as environment variables)
+# ----------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+
+# Testing
+# ----------------------------------------------------------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Build artifacts
+# ----------------------------------------------------------------------------
+dist/
+build/
+*.egg-info/
+
+# OS files
+# ----------------------------------------------------------------------------
+Thumbs.db
+.DS_Store
+
+# Temporary files
+# ----------------------------------------------------------------------------
+*.tmp
+*.bak
+*.swp
+
+# Docker files (don't need to copy these into the image)
+# ----------------------------------------------------------------------------
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml
+
+# Other
+# ----------------------------------------------------------------------------
+*.sql
+*.db
+

@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}Support - System Call Optimizer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="text-white mb-5 text-center">
+            <i class="bi bi-headset"></i> Support Center
+        </h1>
+        
+        <div class="row g-4 mb-5">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h4 class="card-title"><i class="bi bi-question-circle"></i> Frequently Asked Questions</h4>
+                        <div class="accordion" id="faqAccordion">
+                            <div class="accordion-item bg-dark border-secondary">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button bg-dark text-white" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                        How do I reset my password?
+                                    </button>
+                                </h2>
+                                <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Currently, password reset functionality is available through the Django admin panel. Contact your administrator for assistance.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item bg-dark border-secondary">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button bg-dark text-white collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                        My QR code is not working
+                                    </button>
+                                </h2>
+                                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        If your QR code is not working, try regenerating it from your dashboard. Make sure you're using the latest QR code and that it hasn't been revoked.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item bg-dark border-secondary">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button bg-dark text-white collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                        How do I view system call data?
+                                    </button>
+                                </h2>
+                                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Navigate to the Optimizer page from the header. You'll see real-time system call data with filtering options. Click on any system call for detailed information.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item bg-dark border-secondary">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button bg-dark text-white collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                        Can I export my activity logs?
+                                    </button>
+                                </h2>
+                                <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                    <div class="accordion-body">
+                                        Yes! Go to the Activity Logs page and click "Export CSV" to download your activity logs in CSV format.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h4 class="card-title"><i class="bi bi-envelope"></i> Contact Support</h4>
+                        <p>Need help? We're here for you!</p>
+                        <ul class="list-unstyled">
+                            <li class="mb-3">
+                                <i class="bi bi-github"></i> 
+                                <strong>GitHub:</strong> 
+                                <a href="https://github.com/amnandan9" target="_blank" class="text-primary">github.com/amnandan9</a>
+                            </li>
+                            <li class="mb-3">
+                                <i class="bi bi-book"></i> 
+                                <strong>Documentation:</strong> 
+                                <a href="{% url 'documentation' %}" class="text-primary">View Documentation</a>
+                            </li>
+                            <li class="mb-3">
+                                <i class="bi bi-info-circle"></i> 
+                                <strong>Features:</strong> 
+                                <a href="{% url 'features' %}" class="text-primary">View Features</a>
+                            </li>
+                        </ul>
+                        
+                        <div class="mt-4">
+                            <h5>Report an Issue</h5>
+                            <p>If you encounter any bugs or have feature requests, please:</p>
+                            <ol>
+                                <li>Check the documentation first</li>
+                                <li>Review the FAQ section</li>
+                                <li>Contact through GitHub</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4><i class="bi bi-tools"></i> Troubleshooting Guide</h4>
+            </div>
+            <div class="card-body">
+                <h5>Common Issues and Solutions</h5>
+                
+                <div class="mb-3">
+                    <strong>Issue: Cannot access camera for QR login</strong>
+                    <p class="mb-0">Solution: Make sure you've granted camera permissions in your browser settings. Try refreshing the page and allowing camera access when prompted.</p>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Issue: System call data not updating</strong>
+                    <p class="mb-0">Solution: Check your internet connection and refresh the page. The data updates automatically every 5 seconds by default.</p>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Issue: Activity logs not showing</strong>
+                    <p class="mb-0">Solution: Make sure you're logged in and have performed some actions. Use the Auto Fetch button to refresh the logs.</p>
+                </div>
+                
+                <div>
+                    <strong>Issue: Performance metrics seem incorrect</strong>
+                    <p class="mb-0">Solution: System call monitoring requires proper permissions. Make sure the application has the necessary system access.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="bi bi-lightbulb"></i> Tips & Best Practices</h4>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li>Keep your QR code secure and don't share it with others</li>
+                    <li>Regularly review your activity logs for security</li>
+                    <li>Use filters in the Optimizer to focus on specific system calls</li>
+                    <li>Export reports regularly for record keeping</li>
+                    <li>Check the documentation for advanced features</li>
+                    <li>Use the Auto Fetch feature for real-time monitoring</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

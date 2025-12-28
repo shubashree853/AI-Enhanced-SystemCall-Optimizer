@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Documentation - System Call Optimizer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="text-white mb-5 text-center">
+            <i class="bi bi-book"></i> Documentation
+        </h1>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3><i class="bi bi-rocket-takeoff"></i> Getting Started</h3>
+            </div>
+            <div class="card-body">
+                <h5>1. Registration</h5>
+                <p>Create your account by clicking the "Register" button. Fill in your details including username, email, and password. A unique QR code will be automatically generated for your account.</p>
+                
+                <h5>2. Login</h5>
+                <p>You can login using:</p>
+                <ul>
+                    <li><strong>Traditional Login:</strong> Username and password</li>
+                    <li><strong>QR Code Login:</strong> Scan your QR code using the camera</li>
+                </ul>
+                
+                <h5>3. Dashboard</h5>
+                <p>After logging in, you'll see your dashboard with:</p>
+                <ul>
+                    <li>User information and role</li>
+                    <li>Your QR code for quick login</li>
+                    <li>Quick stats and activity logs</li>
+                    <li>Performance trends</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3><i class="bi bi-cpu"></i> System Call Optimizer</h3>
+            </div>
+            <div class="card-body">
+                <h5>Overview</h5>
+                <p>The System Call Optimizer provides real-time monitoring and analysis of system calls with AI-powered optimization recommendations.</p>
+                
+                <h5>Key Features</h5>
+                <ul>
+                    <li><strong>Real-time Monitoring:</strong> View system calls as they happen with live updates</li>
+                    <li><strong>Performance Metrics:</strong> Track execution time, CPU usage, memory, and I/O</li>
+                    <li><strong>Category Filtering:</strong> Filter by File I/O, Process, Memory, IPC, etc.</li>
+                    <li><strong>AI Recommendations:</strong> Get intelligent suggestions for optimization</li>
+                </ul>
+                
+                <h5>Using the Optimizer</h5>
+                <ol>
+                    <li>Navigate to the Optimizer page from the header</li>
+                    <li>Use filters to focus on specific system calls</li>
+                    <li>Click on any system call to view detailed information</li>
+                    <li>Review AI recommendations for performance improvements</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3><i class="bi bi-qr-code"></i> QR Code Authentication</h3>
+            </div>
+            <div class="card-body">
+                <h5>How It Works</h5>
+                <p>Each user receives a unique QR code upon registration. This QR code contains a secure token that can be used for quick authentication.</p>
+                
+                <h5>Using QR Login</h5>
+                <ol>
+                    <li>Go to the QR Login page</li>
+                    <li>Allow camera access when prompted</li>
+                    <li>Point your camera at your QR code</li>
+                    <li>You'll be automatically logged in when the code is detected</li>
+                </ol>
+                
+                <h5>QR Code Management</h5>
+                <ul>
+                    <li><strong>Regenerate:</strong> Create a new QR code (invalidates the old one)</li>
+                    <li><strong>Revoke:</strong> Temporarily disable your QR code</li>
+                    <li><strong>Activate:</strong> Re-enable a revoked QR code</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3><i class="bi bi-graph-up"></i> Activity Logs & Reports</h3>
+            </div>
+            <div class="card-body">
+                <h5>Activity Logs</h5>
+                <p>Track all your activities including logins, QR code operations, and system interactions. Use filters to find specific activities by date, action type, or other criteria.</p>
+                
+                <h5>Auto-Fetch Feature</h5>
+                <p>Click the "Auto Fetch" button to automatically refresh activity logs every 5 seconds. This is useful for monitoring real-time activities.</p>
+                
+                <h5>Reports</h5>
+                <p>Generate comprehensive reports with:</p>
+                <ul>
+                    <li>Activity statistics and trends</li>
+                    <li>Visual charts and graphs</li>
+                    <li>Export to CSV format</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="bi bi-question-circle"></i> API Documentation</h3>
+            </div>
+            <div class="card-body">
+                <h5>Available Endpoints</h5>
+                <ul>
+                    <li><code>GET /optimizer/performance/</code> - Get performance data</li>
+                    <li><code>GET /optimizer/recommendations/</code> - Get optimization recommendations</li>
+                    <li><code>GET /optimizer/categories/</code> - Get syscall categories</li>
+                    <li><code>POST /api/qr-login/</code> - Login using QR code token</li>
+                    <li><code>GET /api/dashboard-stats/</code> - Get dashboard statistics</li>
+                </ul>
+                
+                <h5>Authentication</h5>
+                <p>Most endpoints require authentication. Include your session cookie or use QR code token authentication for API access.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

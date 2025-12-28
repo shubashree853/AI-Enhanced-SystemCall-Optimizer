@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+
+{% block title %}QR Code Login - System Call Optimizer{% endblock %}
+
+{% block extra_css %}
+<style>
+    #qr-reader {
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    #qr-reader__scan_region {
+        background-color: #0a192f;
+    }
+    #qr-reader__dashboard_section {
+        background-color: #112240;
+        border: 1px solid #233554;
+    }
+    #qr-reader__dashboard_section_csr {
+        color: #ccd6f6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4 text-white">
+                    <i class="bi bi-qr-code-scan"></i> QR Code Login
+                </h2>
+                
+                <div id="login-result" class="alert d-none mb-4"></div>
+                
+                <div class="text-center mb-4">
+                    <p class="text-muted">Point your camera at your QR code - you'll be logged in automatically when detected</p>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Camera will start automatically. Show your QR code to the camera.
+                    </div>
+                </div>
+                
+                <div id="qr-reader" class="mb-4"></div>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <p>Don't have a QR code? <a href="{% url 'register' %}" class="text-primary">Register here</a></p>
+                    <p>Or <a href="{% url 'login' %}" class="text-primary">login with username/password</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HTML5 QR Code Scanner Library - Latest version for better compatibility -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+let html5QrcodeScanner = null;
+let isScanning = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const resultDiv = document.getElementById('login-result');
+    
+    function showResult(message, type) {
+        resultDiv.className = 'alert alert-' + type;
+        resultDiv.textContent = message;
+        resultDiv.classList.remove('d-none');
+    }
+    
+    function loginWithToken(qrData) {
+        if (!qrData) {
+            return;
+        }
+        
+        // Prevent multiple login attempts
+        if (isScanning) {
+            return;
+        }
+        
+        isScanning = true;
+        showResult('QR code detected! Logging in...', 'info');
+        
+        // Stop scanner immediately (safely handle both promise and non-promise)
+        if (html5QrcodeScanner) {
+            try {
+                const clearResult = html5QrcodeScanner.clear();
+                if (clearResult && typeof clearResult.then === 'function') {
+                    clearResult.catch(err => console.warn('Error clearing scanner:', err));
+                }
+            } catch (err) {
+                console.warn('Error clearing scanner:', err);
+            }
+        }
+        
+        // Get CSRF token
+        const csrfToken = getCookie('csrftoken');
+        
+        fetch('{% url "qr_login" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'include',
+            body: JSON.stringify({ qr_data: qrData.trim() })  // Changed from 'token' to 'qr_data'
+        })
+        .then(response => {
+            return response.json().then(data => {
+                if (!response.ok) {
+                    throw new Error(data.error || 'Login failed');
+                }
+                return data;
+            });
+        })
+        .then(data => {
+            if (data.success) {
+                showResult('Login successful! Redirecting...', 'success');
+                // Wait a moment to ensure session cookie is set before redirect
+                setTimeout(() => {
+                    window.location.href = data.redirect_url || '{% url "dashboard" %}';
+                }, 500);
+            } else {
+                throw new Error(data.error || 'Login failed');
+            }
+        })
+        .catch(error => {
+            console.error('QR Login Error:', error);
+            showResult('Error: ' + error.message, 'danger');
+            isScanning = false;
+            setTimeout(() => {
+                startScanner();
+            }, 3000);
+        });
+    }
+    
+    function startScanner() {
+        // Clear any existing scanner instance
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear().catch(err => console.error(err));
+            html5QrcodeScanner = null;
+        }
+        
+        // Initialize the QR code scanner
+        html5QrcodeScanner = new Html5Qrcode("qr-reader");
+        
+        // Configuration for better QR code detection
+        // Using simpler configuration that works better with the library
+        const config = {
+            fps: 10,  // Lower FPS for better accuracy and less CPU usage
+            qrbox: { width: 250, height: 250 },  // Fixed size for consistent scanning
+            aspectRatio: 1.0,
+            disableFlip: false  // Allow rotation for better detection
+        };
+        
+        // Start scanning with improved error handling
+        html5QrcodeScanner.start(
+            { facingMode: "environment" },  // Use back camera on mobile devices
+            config,
+            (decodedText, decodedResult) => {
+                // Successfully scanned - decodedText contains username|token or just token
+                console.log('QR Code detected:', decodedText);
+                console.log('Decoded result:', decodedResult);
+                
+                // Validate that we got actual data
+                if (decodedText && decodedText.trim().length > 0) {
+                    // Prevent multiple scans
+                    if (isScanning) {
+                        return;
+                    }
+                    
+                    // Stop the scanner safely before processing
+                    const stopScanner = () => {
+                        try {
+                            if (html5QrcodeScanner) {
+                                // Try to stop the scanner - handle both promise and non-promise returns
+                                const stopResult = html5QrcodeScanner.stop();
+                                if (stopResult && typeof stopResult.then === 'function') {
+                                    // It's a promise
+                                    return stopResult.catch(err => {
+                                        console.warn('Error stopping scanner (non-critical):', err);
+                                        return Promise.resolve(); // Continue anyway
+                                    });
+                                } else {
+                                    // Not a promise, just continue
+                                    console.log('Scanner stop called (non-promise)');
+                                    return Promise.resolve();
+                                }
+                            }
+                        } catch (err) {
+                            console.warn('Error stopping scanner (non-critical):', err);
+                            return Promise.resolve(); // Continue anyway
+                        }
+                        return Promise.resolve();
+                    };
+                    
+                    // Stop scanner and then proceed with login
+                    stopScanner().then(() => {
+                        console.log('Scanner stopped, proceeding with login');
+                        loginWithToken(decodedText.trim());
+                    }).catch(err => {
+                        console.error('Unexpected error stopping scanner:', err);
+                        // Continue with login even if stop fails
+                        loginWithToken(decodedText.trim());
+                    });
+                } else {
+                    console.warn('Empty QR code data received');
+                }
+            },
+            (errorMessage) => {
+                // Only log real errors, ignore "NotFoundException" which is normal during scanning
+                if (errorMessage && 
+                    !errorMessage.includes('NotFoundException') && 
+                    !errorMessage.includes('No QR code found') &&
+                    !errorMessage.includes('QR code parse error')) {
+                    // These are normal scanning messages, don't log them
+                    // console.log('Scanning...', errorMessage);
+                }
+            }
+        ).then(() => {
+            // Scanner started successfully
+            console.log('QR Scanner started successfully');
+            showResult('Camera ready! Point at your QR code to login.', 'success');
+        }).catch(err => {
+            console.error("Unable to start scanning", err);
+            let errorMsg = 'Unable to access camera. ';
+            if (err.name === 'NotAllowedError') {
+                errorMsg += 'Please allow camera permissions and refresh the page.';
+            } else if (err.name === 'NotFoundError') {
+                errorMsg += 'No camera found. Please connect a camera and refresh.';
+            } else {
+                errorMsg += 'Please check permissions and refresh the page.';
+            }
+            showResult(errorMsg, 'warning');
+        });
+    }
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Start scanner on page load with a small delay to ensure DOM is ready
+    setTimeout(() => {
+        console.log('Initializing QR scanner...');
+        startScanner();
+    }, 500);
+    
+    // Add visual feedback that scanner is starting
+    showResult('Initializing camera...', 'info');
+});
+</script>
+{% endblock %}
+

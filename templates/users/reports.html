@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports - System Call Optimizer{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="text-white mb-4">
+            <i class="bi bi-file-earmark-text"></i> Reports & Analytics
+        </h2>
+        
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-primary">{{ total_logs }}</h3>
+                        <p class="mb-0"><i class="bi bi-activity"></i> Total Activities</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-success">{{ activity_by_type|length }}</h3>
+                        <p class="mb-0"><i class="bi bi-list-ul"></i> Activity Types</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <a href="{% url 'export_report' %}" class="btn btn-primary">
+                            <i class="bi bi-download"></i> Export Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Activity by Type -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Activity by Type</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="activityTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Activity Trends (Last 7 Days)</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="activityTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activities -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Activities</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_logs %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Action</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in recent_logs %}
+                            <tr>
+                                <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+                                <td><span class="badge bg-info">{{ log.get_action_display }}</span></td>
+                                <td>{{ log.description }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">No recent activities found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Activity by Type Chart
+const activityTypeCtx = document.getElementById('activityTypeChart').getContext('2d');
+const activityTypeData = {
+    labels: [{% for item in activity_by_type %}'{{ item.action|title }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+    datasets: [{
+        label: 'Count',
+        data: [{% for item in activity_by_type %}{{ item.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+        backgroundColor: [
+            'rgba(100, 255, 218, 0.8)',
+            'rgba(136, 146, 176, 0.8)',
+            'rgba(35, 53, 84, 0.8)',
+            'rgba(10, 25, 47, 0.8)',
+        ]
+    }]
+};
+
+new Chart(activityTypeCtx, {
+    type: 'doughnut',
+    data: activityTypeData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#8892b0'
+                }
+            }
+        }
+    }
+});
+
+// Activity Trend Chart
+const trendCtx = document.getElementById('activityTrendChart').getContext('2d');
+const trendData = {
+    labels: [{% for item in recent_activity %}'{{ item.day }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+    datasets: [{
+        label: 'Activities',
+        data: [{% for item in recent_activity %}{{ item.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+        borderColor: 'rgba(100, 255, 218, 1)',
+        backgroundColor: 'rgba(100, 255, 218, 0.2)',
+        tension: 0.4
+    }]
+};
+
+new Chart(trendCtx, {
+    type: 'line',
+    data: trendData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#8892b0'
+                }
+            }
+        },
+        scales: {
+            y: {
+                ticks: {
+                    color: '#8892b0'
+                },
+                grid: {
+                    color: '#233554'
+                }
+            },
+            x: {
+                ticks: {
+                    color: '#8892b0'
+                },
+                grid: {
+                    color: '#233554'
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
+

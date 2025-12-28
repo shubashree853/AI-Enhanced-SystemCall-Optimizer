@@ -1,0 +1,107 @@
+# ============================================================================
+# Docker Compose Configuration for AI-Enhanced System Call Optimization
+# ============================================================================
+# This file defines services, networks, and volumes for running the application
+# with Docker Compose. Makes it easy to run the app with a single command.
+# ============================================================================
+
+version: '3.8'
+
+services:
+  # Django Web Application Service
+  # --------------------------------------------------------------------------
+  web:
+    # Build the Docker image from the Dockerfile in current directory
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    # Container name
+    container_name: syscall_optimizer_app
+    
+    # Port mapping: host:container
+    # Access the app at http://localhost:8000
+    ports:
+      - "8000:8000"
+    
+    # Environment variables
+    # ------------------------------------------------------------------------
+    # These can be overridden by creating a .env file or setting them
+    # in your shell environment
+    environment:
+      # Django Settings
+      - DJANGO_SETTINGS_MODULE=syscall_optimizer.settings
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-change-this-in-production}
+      - DEBUG=${DEBUG:-False}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1}
+      
+      # Groq API Key (optional - for AI recommendations)
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      
+      # Database (if using PostgreSQL, uncomment and configure)
+      # - DATABASE_URL=postgresql://user:password@db:5432/syscall_optimizer
+    
+    # Volume mounts
+    # ------------------------------------------------------------------------
+    # Persist data outside the container so it survives container restarts
+    volumes:
+      # Media files (user uploads, QR codes, etc.)
+      - ./media:/app/media
+      # Database file (if using SQLite)
+      - ./db.sqlite3:/app/db.sqlite3
+      # Static files (optional - can be served by nginx)
+      - ./staticfiles:/app/staticfiles
+    
+    # Restart policy
+    # ------------------------------------------------------------------------
+    # Automatically restart container if it crashes or system reboots
+    restart: unless-stopped
+    
+    # Health check
+    # ------------------------------------------------------------------------
+    # Docker Compose will check if service is healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Dependencies (uncomment if using PostgreSQL)
+    # ------------------------------------------------------------------------
+    # depends_on:
+    #   - db
+
+  # PostgreSQL Database Service (Optional)
+  # --------------------------------------------------------------------------
+  # Uncomment this section if you want to use PostgreSQL instead of SQLite
+  # 
+  # db:
+  #   image: postgres:15-alpine
+  #   container_name: syscall_optimizer_db
+  #   environment:
+  #     - POSTGRES_DB=syscall_optimizer
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=${DB_PASSWORD:-changeme}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+# Volumes (for PostgreSQL data persistence)
+# ----------------------------------------------------------------------------
+# volumes:
+#   postgres_data:
+
+# Networks (optional - for connecting services)
+# ----------------------------------------------------------------------------
+# networks:
+#   default:
+#     name: syscall_optimizer_network
+

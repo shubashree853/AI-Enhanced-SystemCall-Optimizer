@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - System Call Optimizer{% endblock %}
+
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="text-white mb-4">
+            <i class="bi bi-speedometer2"></i> Welcome, {{ user.username }}!
+        </h2>
+        
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-person-badge"></i> User Role
+                        </h5>
+                        <p class="card-text">
+                            <span class="badge bg-primary">{{ user.get_role_display }}</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-envelope"></i> Email
+                        </h5>
+                        <p class="card-text">{{ user.email }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-calendar"></i> Member Since
+                        </h5>
+                        <p class="card-text">{{ user.date_joined|date:"F Y" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-qr-code"></i> Your QR Code
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if qr_code %}
+                    <div class="row">
+                        <div class="col-md-6 text-center">
+                            {% if qr_code.qr_image %}
+                                <img src="{{ qr_code.qr_image.url }}" alt="QR Code" class="img-fluid mb-3" style="max-width: 300px;">
+                            {% else %}
+                                <p class="text-muted">QR code image not available</p>
+                            {% endif %}
+                            
+                            <div class="mb-3">
+                                <strong>Status:</strong>
+                                {% if qr_code.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Revoked</span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <strong>Token:</strong>
+                                <code class="d-block mt-2">{{ qr_code.token }}</code>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>QR Code Actions</h6>
+                            <div class="d-grid gap-2">
+                                {% if qr_code.is_active %}
+                                    <a href="{% url 'revoke_qr' %}" class="btn btn-danger">
+                                        <i class="bi bi-x-circle"></i> Revoke QR Code
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'activate_qr' %}" class="btn btn-success">
+                                        <i class="bi bi-check-circle"></i> Activate QR Code
+                                    </a>
+                                {% endif %}
+                                <a href="{% url 'generate_qr' %}" class="btn btn-primary">
+                                    <i class="bi bi-arrow-clockwise"></i> Regenerate QR Code
+                                </a>
+                            </div>
+                            
+                            <hr>
+                            
+                            <h6>How to Use</h6>
+                            <ol>
+                                <li>Show your QR code to the scanner</li>
+                                <li>Or use the token to login via API</li>
+                                <li>Keep your QR code secure</li>
+                            </ol>
+                        </div>
+                    </div>
+                {% else %}
+                    <p>No QR code found. <a href="{% url 'generate_qr' %}" class="btn btn-primary">Generate QR Code</a></p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Stats Widget -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-primary" id="total-activities">0</h3>
+                        <p class="mb-0"><i class="bi bi-activity"></i> Total Activities</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-success" id="optimizations">0</h3>
+                        <p class="mb-0"><i class="bi bi-check-circle"></i> Optimizations</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-warning" id="alerts">0</h3>
+                        <p class="mb-0"><i class="bi bi-exclamation-triangle"></i> Active Alerts</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-info" id="performance-score">0%</h3>
+                        <p class="mb-0"><i class="bi bi-graph-up"></i> Performance Score</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Logs Section -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history"></i> Recent Activity Logs
+                </h5>
+                <a href="{% url 'activity_logs' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <div id="activity-logs-list">
+                    <p class="text-muted text-center">Loading activity logs...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Trends -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up-arrow"></i> Performance Trends
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="performance-trend-chart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Load dashboard statistics
+fetch('{% url "dashboard_stats" %}')
+    .then(response => response.json())
+    .then(data => {
+        // Update quick stats
+        document.getElementById('total-activities').textContent = data.total_activities;
+        document.getElementById('optimizations').textContent = data.optimizations;
+        document.getElementById('alerts').textContent = data.alerts;
+        document.getElementById('performance-score').textContent = data.performance_score + '%';
+        
+        // Update activity logs
+        const logsList = document.getElementById('activity-logs-list');
+        if (data.recent_activities.length > 0) {
+            logsList.innerHTML = '<div class="list-group">' + 
+                data.recent_activities.map(log => `
+                    <div class="list-group-item bg-dark border-secondary" style="color: #8892b0;">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong style="color: #ccd6f6;">${log.action}</strong>
+                                <p class="mb-0 small" style="color: #8892b0;">${log.description}</p>
+                            </div>
+                            <small style="color: #8892b0;">${log.created_at}</small>
+                        </div>
+                    </div>
+                `).join('') + '</div>';
+        } else {
+            logsList.innerHTML = '<p class="text-muted text-center">No recent activities</p>';
+        }
+        
+        // Update performance trends chart
+        const ctx = document.getElementById('performance-trend-chart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.trends.map(t => t.date),
+                datasets: [{
+                    label: 'Activities',
+                    data: data.trends.map(t => t.count),
+                    borderColor: 'rgba(100, 255, 218, 1)',
+                    backgroundColor: 'rgba(100, 255, 218, 0.2)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#8892b0'
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        ticks: {
+                            color: '#8892b0'
+                        },
+                        grid: {
+                            color: '#233554'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#8892b0'
+                        },
+                        grid: {
+                            color: '#233554'
+                        }
+                    }
+                }
+            }
+        });
+    })
+    .catch(error => {
+        console.error('Error loading dashboard stats:', error);
+        document.getElementById('activity-logs-list').innerHTML = 
+            '<p class="text-danger text-center">Error loading activity logs</p>';
+    });
+</script>
+{% endblock %}
+

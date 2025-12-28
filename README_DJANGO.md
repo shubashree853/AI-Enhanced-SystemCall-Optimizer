@@ -175,16 +175,7 @@ syscall_optimizer/
 - Run: `python manage.py collectstatic`
 - Make sure `STATIC_URL` and `STATIC_ROOT` are configured correctly
 
-## 🙏 Special Thanks
+## License
 
-This project is a recreation and enhancement of the original **AI System Call Optimizer** project. Special thanks to the original repository:
+This project is licensed under the MIT License.
 
-**Original Repository:** [https://github.com/CipherYuvraj/AI-Enhanced-System-Call-Optimization](https://github.com/CipherYuvraj/AI-Enhanced-System-Call-Optimization)
-The original project provided the foundation for system call monitoring using **eBPF**, **Flask**, and **AI (Groq API)**. This Django-based version extends the functionality with:
-- Enhanced user authentication with QR code login
-- Role-based access control
-- Activity logging and reporting
-- Improved web interface with Bootstrap
-- Better session management
-- Comprehensive dashboard with real-time metrics
-For Linux system requirements and eBPF-based monitoring, please refer to the original repository's documentation on **AI System Call Optimizer** - a real-time system call monitoring and optimization tool using eBPF, Flask, and optional AI (Groq API) for performance analysis and smart recommendations.

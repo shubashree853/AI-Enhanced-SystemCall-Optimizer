@@ -1,0 +1,720 @@
+{% extends 'base.html' %}
+
+{% block title %}System Call Optimizer - Dashboard{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .scrollbar-custom::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    .scrollbar-custom::-webkit-scrollbar-track {
+        background: #0a192f;
+    }
+    .scrollbar-custom::-webkit-scrollbar-thumb {
+        background: #233554;
+        border-radius: 4px;
+    }
+    .scrollbar-custom::-webkit-scrollbar-thumb:hover {
+        background: #64ffda;
+    }
+    .category-button.active {
+        background-color: #64ffda;
+        color: #0a192f;
+    }
+    .syscall-card {
+        transition: transform 0.2s ease-in-out;
+    }
+    .syscall-card:hover {
+        transform: translateY(-4px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="text-white mb-4">
+            <i class="bi bi-cpu"></i> System Call Optimizer Dashboard
+        </h2>
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle me-2" style="width: 12px; height: 12px; background-color: #50fa7b; animation: pulse 2s infinite;"></div>
+                            <span class="text-white">Monitoring Active</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="text-muted me-2">Refresh:</span>
+                            <select id="refresh-rate" class="form-select form-select-sm" style="background-color: #0a192f; border-color: #233554; color: #ccd6f6; width: auto;">
+                                <option value="5">5 seconds</option>
+                                <option value="10">10 seconds</option>
+                                <option value="30">30 seconds</option>
+                                <option value="60">1 minute</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-primary" id="pause-btn" onclick="togglePause()">
+                            <i class="bi bi-pause-circle"></i> Pause
+                        </button>
+                        <button type="button" class="btn btn-sm btn-success" id="export-btn" onclick="exportData()">
+                            <i class="bi bi-download"></i> Export
+                        </button>
+                        <button type="button" class="btn btn-sm btn-info" id="reset-filters-btn" onclick="resetFilters()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset Filters
+                        </button>
+                        <button type="button" class="btn btn-sm btn-warning" id="generate-fake-btn" onclick="generateFakeSyscalls()">
+                            <i class="bi bi-arrow-clockwise"></i> Generate Sample Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <div class="row g-4 mb-4">
+        <!-- Sidebar with filters and categories -->
+        <div class="col-lg-3">
+            <div class="card mb-4" style="background-color: #112240; border-color: #233554;">
+                <div class="card-body">
+                    <h5 class="card-title mb-4" style="color: #64ffda; border-bottom: 1px solid #233554; padding-bottom: 10px;">
+                        Filters
+                    </h5>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="show-unknown">
+                            <label class="form-check-label" for="show-unknown" style="color: #8892b0;">
+                                Show unknown syscalls
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="show-critical-only">
+                            <label class="form-check-label" for="show-critical-only" style="color: #8892b0;">
+                                Show critical issues only
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label" style="color: #8892b0;">Min executions:</label>
+                        <input type="range" class="form-range" id="min-executions" min="1" max="1000" value="1">
+                        <div class="d-flex justify-content-between text-xs" style="color: #8892b0;">
+                            <span>1</span>
+                            <span id="min-executions-value">1</span>
+                            <span>1000+</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card" style="background-color: #112240; border-color: #233554;">
+                <div class="card-body">
+                    <h5 class="card-title mb-4" style="color: #64ffda; border-bottom: 1px solid #233554; padding-bottom: 10px;">
+                        Categories
+                    </h5>
+                    <div id="category-buttons" class="d-flex flex-column gap-2">
+                        <button class="btn btn-sm category-button active" data-category="all">All Categories</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main content -->
+        <div class="col-lg-9">
+            <!-- System overview cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="card" style="background-color: #112240; border-color: #233554;">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0" style="color: #64ffda;">System Calls</h6>
+                                <span id="total-syscalls" class="h4 mb-0" style="color: #ccd6f6;">0</span>
+                            </div>
+                            <div class="progress mb-2" style="height: 8px; background-color: #0a192f;">
+                                <div id="critical-progress" class="progress-bar" style="background-color: #ff5252; width: 0%"></div>
+                            </div>
+                            <div class="d-flex justify-content-between text-xs" style="color: #8892b0;">
+                                <span>Total</span>
+                                <span id="critical-count" style="color: #ff5252;">0 critical</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card" style="background-color: #112240; border-color: #233554;">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0" style="color: #64ffda;">CPU Impact</h6>
+                                <span id="avg-cpu-impact" class="h4 mb-0" style="color: #ccd6f6;">0%</span>
+                            </div>
+                            <div class="progress mb-2" style="height: 8px; background-color: #0a192f;">
+                                <div id="cpu-progress" class="progress-bar" style="background-color: #ffd866; width: 0%"></div>
+                            </div>
+                            <div class="d-flex justify-content-between text-xs" style="color: #8892b0;">
+                                <span>Average</span>
+                                <span id="max-cpu-impact" style="color: #ffd866;">0% max</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card" style="background-color: #112240; border-color: #233554;">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0" style="color: #64ffda;">Memory Impact</h6>
+                                <span id="avg-memory-impact" class="h4 mb-0" style="color: #ccd6f6;">0%</span>
+                            </div>
+                            <div class="progress mb-2" style="height: 8px; background-color: #0a192f;">
+                                <div id="memory-progress" class="progress-bar" style="background-color: #bd93f9; width: 0%"></div>
+                            </div>
+                            <div class="d-flex justify-content-between text-xs" style="color: #8892b0;">
+                                <span>Average</span>
+                                <span id="max-memory-impact" style="color: #bd93f9;">0% max</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System calls grid view -->
+            <div class="card mb-4" style="background-color: #112240; border-color: #233554;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0" style="color: #64ffda;">System Calls</h5>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-sm" style="color: #8892b0;">View:</span>
+                            <button id="grid-view-btn" class="btn btn-sm" style="background-color: #233554; color: #64ffda;">Grid</button>
+                            <button id="table-view-btn" class="btn btn-sm" style="background-color: transparent; color: #8892b0;">Table</button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="input-group">
+                            <input type="text" id="syscall-search" class="form-control" placeholder="Search system calls..." style="background-color: #0a192f; border-color: #233554; color: #ccd6f6;">
+                            <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()" style="border-color: #233554; color: #8892b0;">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 d-flex gap-2 flex-wrap">
+                        <button class="btn btn-sm btn-outline-primary" onclick="sortBy('executions')">
+                            <i class="bi bi-sort-numeric-down"></i> Sort by Executions
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="sortBy('time')">
+                            <i class="bi bi-clock"></i> Sort by Time
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="sortBy('cpu')">
+                            <i class="bi bi-cpu"></i> Sort by CPU
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning" onclick="highlightCritical()">
+                            <i class="bi bi-exclamation-triangle"></i> Highlight Critical
+                        </button>
+                    </div>
+                    
+                    <!-- Grid view (default) -->
+                    <div id="grid-view" class="row g-3" style="max-height: 400px; overflow-y: auto;">
+                        <!-- System call cards will be populated here -->
+                    </div>
+                    
+                    <!-- Table view (hidden by default) -->
+                    <div id="table-view" class="d-none" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-dark table-hover">
+                            <thead style="background-color: #0a192f; position: sticky; top: 0;">
+                                <tr>
+                                    <th style="color: #64ffda;">Name</th>
+                                    <th style="color: #64ffda;">Category</th>
+                                    <th style="color: #64ffda;">Executions</th>
+                                    <th style="color: #64ffda;">Avg Time</th>
+                                    <th style="color: #64ffda;">CPU</th>
+                                    <th style="color: #64ffda;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <!-- Table rows will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Optimization recommendations -->
+            <div class="card" style="background-color: #112240; border-color: #233554;">
+                <div class="card-body">
+                    <h5 class="card-title mb-4" style="color: #64ffda; border-bottom: 1px solid #233554; padding-bottom: 10px;">
+                        Critical Recommendations
+                    </h5>
+                    <div id="recommendations-list">
+                        <!-- Recommendations will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const refreshInterval = parseInt({{ refresh_interval }}) * 1000;
+let performanceHistory = {};
+let activeCategory = 'all';
+let updateInterval;
+
+function updateDashboard() {
+    if (!isPaused) {
+        fetchPerformanceData();
+        fetchCategories();
+        fetchRecommendations();
+    }
+}
+
+function togglePause() {
+    isPaused = !isPaused;
+    const btn = document.getElementById('pause-btn');
+    if (isPaused) {
+        btn.innerHTML = '<i class="bi bi-play-circle"></i> Resume';
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-warning');
+        clearInterval(updateInterval);
+    } else {
+        btn.innerHTML = '<i class="bi bi-pause-circle"></i> Pause';
+        btn.classList.remove('btn-warning');
+        btn.classList.add('btn-primary');
+        updateDashboard();
+        updateInterval = setInterval(updateDashboard, refreshInterval);
+    }
+}
+
+function exportData() {
+    const data = JSON.stringify(allSyscallsData, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `syscall_data_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function resetFilters() {
+    document.getElementById('show-unknown').checked = false;
+    document.getElementById('show-critical-only').checked = false;
+    document.getElementById('min-executions').value = 1;
+    document.getElementById('min-executions-value').textContent = 1;
+    document.getElementById('syscall-search').value = '';
+    activeCategory = 'all';
+    currentSort = null;
+    document.querySelectorAll('.category-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector('[data-category="all"]').classList.add('active');
+    updateSyscallView(allSyscallsData);
+}
+
+function clearSearch() {
+    document.getElementById('syscall-search').value = '';
+    updateSyscallView(allSyscallsData);
+}
+
+function sortBy(criteria) {
+    currentSort = criteria;
+    const sorted = Object.entries(allSyscallsData).sort((a, b) => {
+        const [nameA, dataA] = a;
+        const [nameB, dataB] = b;
+        if (criteria === 'executions') {
+            return dataB.execution_count - dataA.execution_count;
+        } else if (criteria === 'time') {
+            return dataB.average_time - dataA.average_time;
+        } else if (criteria === 'cpu') {
+            return (dataB.resource_impact?.cpu_percent || 0) - (dataA.resource_impact?.cpu_percent || 0);
+        }
+        return 0;
+    });
+    const sortedData = {};
+    sorted.forEach(([name, data]) => {
+        sortedData[name] = data;
+    });
+    updateSyscallView(sortedData);
+}
+
+function highlightCritical() {
+    document.querySelectorAll('.syscall-card').forEach(card => {
+        const avgTime = parseFloat(card.dataset.avgTime || 0);
+        const cpu = parseFloat(card.dataset.cpu || 0);
+        if (avgTime > 0.05 || cpu > 50) {
+            card.style.border = '2px solid #ff5252';
+            card.style.boxShadow = '0 0 10px rgba(255, 82, 82, 0.5)';
+        } else {
+            card.style.border = '';
+            card.style.boxShadow = '';
+        }
+    });
+}
+
+function generateFakeSyscalls() {
+    const btn = document.getElementById('generate-fake-btn');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Generating...';
+    
+    fetch('/optimizer/generate-fake-data/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showResult('Sample system call data generated successfully!', 'success');
+                // Refresh the data
+                setTimeout(() => {
+                    fetchPerformanceData();
+                    fetchCategories();
+                    fetchRecommendations();
+                }, 500);
+            } else {
+                showResult('Error generating data', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showResult('Error generating data: ' + error, 'danger');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        });
+}
+
+function showResult(message, type) {
+    // Create or update result message
+    let resultDiv = document.getElementById('result-message');
+    if (!resultDiv) {
+        resultDiv = document.createElement('div');
+        resultDiv.id = 'result-message';
+        resultDiv.className = 'alert alert-' + type + ' alert-dismissible fade show';
+        resultDiv.style.position = 'fixed';
+        resultDiv.style.top = '80px';
+        resultDiv.style.right = '20px';
+        resultDiv.style.zIndex = '9999';
+        document.body.appendChild(resultDiv);
+    }
+    resultDiv.className = 'alert alert-' + type + ' alert-dismissible fade show';
+    resultDiv.innerHTML = message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>';
+    setTimeout(() => {
+        if (resultDiv) {
+            resultDiv.remove();
+        }
+    }, 3000);
+}
+
+function fetchPerformanceData() {
+    return fetch('{% url "performance_data" %}')
+        .then(response => response.json())
+        .then(data => {
+            allSyscallsData = data;
+            updateSystemOverview(data);
+            updateSyscallView(data);
+            return data;
+        })
+        .catch(error => {
+            console.error('Error fetching performance data:', error);
+            return {};
+        });
+}
+
+function fetchCategories() {
+    fetch('{% url "categories" %}')
+        .then(response => response.json())
+        .then(data => {
+            updateCategoryButtons(data);
+        })
+        .catch(error => console.error('Error fetching categories:', error));
+}
+
+function fetchRecommendations() {
+    fetch('{% url "recommendations" %}')
+        .then(response => response.json())
+        .then(data => {
+            updateRecommendations(data);
+        })
+        .catch(error => console.error('Error fetching recommendations:', error));
+}
+
+function updateSystemOverview(data) {
+    const syscalls = Object.values(data);
+    const totalSyscalls = syscalls.length;
+    const criticalSyscalls = syscalls.filter(record => 
+        record.average_time > 0.05 || 
+        (record.resource_impact.cpu_percent || 0) > 50 ||
+        (record.resource_impact.memory_percent || 0) > 50
+    ).length;
+    
+    let totalCpuImpact = 0;
+    let totalMemoryImpact = 0;
+    let maxCpuImpact = 0;
+    let maxMemoryImpact = 0;
+    
+    syscalls.forEach(record => {
+        const cpuImpact = record.resource_impact.cpu_percent || 0;
+        const memoryImpact = record.resource_impact.memory_percent || 0;
+        totalCpuImpact += cpuImpact;
+        totalMemoryImpact += memoryImpact;
+        maxCpuImpact = Math.max(maxCpuImpact, cpuImpact);
+        maxMemoryImpact = Math.max(maxMemoryImpact, memoryImpact);
+    });
+    
+    const avgCpuImpact = syscalls.length ? totalCpuImpact / syscalls.length : 0;
+    const avgMemoryImpact = syscalls.length ? totalMemoryImpact / syscalls.length : 0;
+    
+    document.getElementById('total-syscalls').textContent = totalSyscalls;
+    document.getElementById('critical-count').textContent = `${criticalSyscalls} critical`;
+    document.getElementById('critical-progress').style.width = `${(criticalSyscalls / Math.max(1, totalSyscalls)) * 100}%`;
+    
+    document.getElementById('avg-cpu-impact').textContent = `${avgCpuImpact.toFixed(1)}%`;
+    document.getElementById('max-cpu-impact').textContent = `${maxCpuImpact.toFixed(1)}% max`;
+    document.getElementById('cpu-progress').style.width = `${Math.min(100, avgCpuImpact)}%`;
+    
+    document.getElementById('avg-memory-impact').textContent = `${avgMemoryImpact.toFixed(1)}%`;
+    document.getElementById('max-memory-impact').textContent = `${maxMemoryImpact.toFixed(1)}% max`;
+    document.getElementById('memory-progress').style.width = `${Math.min(100, avgMemoryImpact)}%`;
+}
+
+function updateSyscallView(data) {
+    const showUnknown = document.getElementById('show-unknown').checked;
+    const showCriticalOnly = document.getElementById('show-critical-only').checked;
+    const minExecutions = parseInt(document.getElementById('min-executions').value);
+    const searchQuery = document.getElementById('syscall-search').value.toLowerCase();
+    
+    let filteredSyscalls = Object.entries(data)
+        .filter(([syscall, record]) => {
+            if (!showUnknown && syscall.startsWith('unknown_')) return false;
+            if (showCriticalOnly && 
+                !(record.average_time > 0.05 || 
+                  (record.resource_impact.cpu_percent || 0) > 50 ||
+                  (record.resource_impact.memory_percent || 0) > 50)) return false;
+            if (record.execution_count < minExecutions) return false;
+            if (searchQuery && !syscall.toLowerCase().includes(searchQuery)) return false;
+            if (activeCategory !== 'all' && record.category !== activeCategory) return false;
+            return true;
+        });
+    
+    filteredSyscalls.sort((a, b) => b[1].execution_count - a[1].execution_count);
+    
+    updateGridView(filteredSyscalls);
+    updateTableView(filteredSyscalls);
+}
+
+function updateGridView(syscalls) {
+    const gridContainer = document.getElementById('grid-view');
+    gridContainer.innerHTML = '';
+    
+    syscalls.forEach(([syscall, record]) => {
+        const card = document.createElement('div');
+        card.className = 'col-md-4';
+        
+        let statusColor = '#50fa7b';
+        let statusText = 'Good';
+        
+        if (record.average_time > 0.05 || record.resource_impact.cpu_percent > 50 || record.resource_impact.memory_percent > 50) {
+            statusColor = '#ff5252';
+            statusText = 'Critical';
+        } else if (record.average_time > 0.02 || record.resource_impact.cpu_percent > 30 || record.resource_impact.memory_percent > 30) {
+            statusColor = '#ffd866';
+            statusText = 'Warning';
+        }
+        
+        card.className = 'col-md-4';
+        card.innerHTML = `
+            <div class="card syscall-card" style="background-color: #0a192f; border-color: #233554; cursor: pointer;" data-avg-time="${record.average_time || 0}" data-cpu="${record.resource_impact?.cpu_percent || 0}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-0" style="color: #64ffda;">${syscall}</h6>
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle me-1" style="width: 12px; height: 12px; background-color: ${statusColor};"></div>
+                            <span class="text-xs" style="color: #8892b0;">${statusText}</span>
+                        </div>
+                    </div>
+                    <div class="text-xs mb-2" style="color: #8892b0;">${record.category || 'Uncategorized'}</div>
+                    <div class="d-flex justify-content-between text-sm mb-2">
+                        <span style="color: #8892b0;">Executions:</span>
+                        <span style="color: #ccd6f6;">${record.execution_count.toLocaleString()}</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-sm mb-2">
+                        <span style="color: #8892b0;">Avg Time:</span>
+                        <span style="color: #ccd6f6;">${record.average_time.toFixed(5)}s</span>
+                    </div>
+                    <div class="d-flex justify-content-between text-sm">
+                        <span style="color: #8892b0;">CPU:</span>
+                        <span style="color: #ffd866;">${record.resource_impact.cpu_percent.toFixed(1)}%</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        gridContainer.appendChild(card);
+    });
+    
+    if (syscalls.length === 0) {
+        gridContainer.innerHTML = '<div class="col-12 text-center py-4" style="color: #8892b0;">No system calls matching the current filters.</div>';
+    }
+}
+
+function updateTableView(syscalls) {
+    const tableBody = document.getElementById('table-body');
+    tableBody.innerHTML = '';
+    
+    syscalls.forEach(([syscall, record]) => {
+        let statusColor = '#50fa7b';
+        let statusText = 'Good';
+        
+        if (record.average_time > 0.05 || record.resource_impact.cpu_percent > 50 || record.resource_impact.memory_percent > 50) {
+            statusColor = '#ff5252';
+            statusText = 'Critical';
+        } else if (record.average_time > 0.02 || record.resource_impact.cpu_percent > 30 || record.resource_impact.memory_percent > 30) {
+            statusColor = '#ffd866';
+            statusText = 'Warning';
+        }
+        
+        const row = document.createElement('tr');
+        row.style.cursor = 'pointer';
+        row.innerHTML = `
+            <td style="color: #ccd6f6;">${syscall}</td>
+            <td style="color: #8892b0;">${record.category || 'Uncategorized'}</td>
+            <td style="color: #ccd6f6;">${record.execution_count.toLocaleString()}</td>
+            <td style="color: #ccd6f6;">${record.average_time.toFixed(5)}s</td>
+            <td style="color: #ffd866;">${record.resource_impact.cpu_percent.toFixed(1)}%</td>
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle me-1" style="width: 8px; height: 8px; background-color: ${statusColor};"></div>
+                    <span class="text-xs" style="color: #8892b0;">${statusText}</span>
+                </div>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+    
+    if (syscalls.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4" style="color: #8892b0;">No system calls matching the current filters.</td></tr>';
+    }
+}
+
+function updateCategoryButtons(categories) {
+    const container = document.getElementById('category-buttons');
+    container.innerHTML = '<button class="btn btn-sm category-button active" data-category="all">All Categories</button>';
+    
+    Object.keys(categories).forEach(category => {
+        const button = document.createElement('button');
+        button.className = 'btn btn-sm category-button';
+        button.textContent = category;
+        button.dataset.category = category;
+        button.style.cssText = 'background-color: #0a192f; color: #ccd6f6; border-color: #233554;';
+        button.addEventListener('click', function() {
+            document.querySelectorAll('.category-button').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.cssText = 'background-color: #0a192f; color: #ccd6f6; border-color: #233554;';
+            });
+            this.classList.add('active');
+            this.style.cssText = 'background-color: #64ffda; color: #0a192f;';
+            activeCategory = category;
+            fetchPerformanceData();
+        });
+        container.appendChild(button);
+    });
+}
+
+function updateRecommendations(recommendations) {
+    const container = document.getElementById('recommendations-list');
+    container.innerHTML = '';
+    
+    if (recommendations.length === 0) {
+        container.innerHTML = '<div class="text-center py-4" style="color: #8892b0;">No critical issues detected at this time.</div>';
+        return;
+    }
+    
+    recommendations.forEach(rec => {
+        const card = document.createElement('div');
+        card.className = 'card mb-3';
+        card.style.cssText = 'background-color: #0a192f; border-left: 4px solid #ff5252; border-color: #233554;';
+        card.innerHTML = `
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="mb-0" style="color: #ccd6f6;">${rec.syscall}</h6>
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle me-1" style="width: 8px; height: 8px; background-color: #ff5252;"></div>
+                        <span class="text-xs" style="color: #8892b0;">Critical</span>
+                    </div>
+                </div>
+                <p class="mb-3" style="color: #8892b0;">${rec.suggested_action}</p>
+                <div style="color: #64ffda; font-size: 0.875rem;">${rec.recommendation_type}</div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// Initialize variables
+let allSyscallsData = {};
+let isPaused = false;
+let currentSort = null;
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Load initial data
+    fetchPerformanceData().then(data => {
+        // If no data exists, generate some fake data
+        if (!data || Object.keys(data).length === 0) {
+            console.log('No system call data found, generating sample data...');
+            // Generate fake data via API
+            fetch('/optimizer/generate-fake-data/')
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        // Refresh data after generation
+                        setTimeout(() => {
+                            fetchPerformanceData();
+                            fetchCategories();
+                            fetchRecommendations();
+                        }, 500);
+                    }
+                })
+                .catch(err => console.error('Error generating fake data:', err));
+        }
+    });
+    
+    updateDashboard();
+    updateInterval = setInterval(updateDashboard, refreshInterval);
+    
+    document.getElementById('refresh-rate').addEventListener('change', function() {
+        clearInterval(updateInterval);
+        const rate = parseInt(this.value) * 1000;
+        updateInterval = setInterval(updateDashboard, rate);
+    });
+    
+    document.getElementById('show-unknown').addEventListener('change', () => fetchPerformanceData());
+    document.getElementById('show-critical-only').addEventListener('change', () => fetchPerformanceData());
+    document.getElementById('min-executions').addEventListener('input', function() {
+        document.getElementById('min-executions-value').textContent = this.value;
+        fetchPerformanceData();
+    });
+    document.getElementById('syscall-search').addEventListener('input', () => fetchPerformanceData());
+    
+    document.getElementById('grid-view-btn').addEventListener('click', function() {
+        document.getElementById('grid-view').classList.remove('d-none');
+        document.getElementById('table-view').classList.add('d-none');
+        this.style.cssText = 'background-color: #233554; color: #64ffda;';
+        document.getElementById('table-view-btn').style.cssText = 'background-color: transparent; color: #8892b0;';
+    });
+    
+    document.getElementById('table-view-btn').addEventListener('click', function() {
+        document.getElementById('grid-view').classList.add('d-none');
+        document.getElementById('table-view').classList.remove('d-none');
+        this.style.cssText = 'background-color: #233554; color: #64ffda;';
+        document.getElementById('grid-view-btn').style.cssText = 'background-color: transparent; color: #8892b0;';
+    });
+});
+</script>
+{% endblock %}
+
